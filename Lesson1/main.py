@@ -1,64 +1,141 @@
-class Model:
-    def __init__(self, filename, input):
-        self.filename = filename
-        self.input = input
-        self.output = ''
-
-    def validate_input(self, input):
-        """Метод должен проверять входные данные и возвращать True в случае корректности, иначе False"""
-        pass
-
-    def run_model(self, filename, input):
-        """Метод должен запускать модель и возвращать True в случае успешной работы, иначе False"""
-        pass
-
-    def get_data(self):
-        """Получение последнего ввода и вывода вывода"""
-        pass
-
 from datetime import datetime
+import hashlib
+import os
+
+class Balance:
+    def __init__(self):
+        self.__balance = {}
+        self.__balance_history = []
+
+    def get_balance(self, user_id):
+        return self.__balance.get(user_id)
+
+    def deposit(self, user_id, amount):
+        self.__balance.update((user_id, self.get_balance(user_id) + amount))
+        self.__balance_history.append({'user_id': user_id,
+                                       'amount': amount,
+                                       'current_amount': self.get_balance(user_id),
+                                       'date': datetime.now()})
+
+    def withdraw(self, user_id, amount):
+        self.__balance.update((user_id, self.get_balance(user_id) - amount))
+        self.__balance_history.append({'user_id': user_id,
+                                       'amount': -amount,
+                                       'current_amount': self.get_balance(user_id),
+                                       'date': datetime.now()})
+
+    def get_history(self):
+        return self.__balance_history
+
+Balance = Balance()
 
 class History:
     def __init__(self):
         self.history = []
 
-    def add_transaction(self, user_id, action, amount):
+    def add_transaction(self, user_id, action, amount, data, prediction):
         entry = {'user_id': user_id,
                  'action': action,
                  'amount': amount,
-                 'input': Model.get_data()[0],
-                 'output': Model.get_data()[1],
+                 'data':data,
+                 'prediction': prediction,
                  'date': datetime.now()
                  }
         self.history.append(entry)
 
-class User:
-    def __init__(self, id, is_admin, name, surname, birth_date, gender, balance):
-        self.id = id
-        self.is_admin = is_admin
-        self.name = name
-        self.surname = surname
-        self.birth_date = birth_date
-        self.gender = gender
-        self.__balance = balance
-        self.__history = History()
+    def get_history(self):
+        return self.history
 
-    def request_model(self, uploaded_file):
-        if self.__balance >= 100:
-            if Model.validate_input(uploaded_file):
-                if Model.run_model(uploaded_file):
-                    self.__history.add_transaction(self.id, 'Списание за услугу', '-100')
-                    self.__balance -= 100
-                    return Model.get_data()[1]
+History = History()
+
+class MLModel:
+    def __init__(self, filename):
+        self.filename = filename
+        self.output = ''
+
+    def upload (self, filename):
+        """Загрузка модели"""
+        pass
+
+    def initialize(self):
+        """Инициализация модели"""
+        pass
+
+    def predict(self, data):
+        """Метод должен запускать модель и возвращать массив:
+        [Булевский флаг, предсказание или сообщение об ошибке}"""
+        flag = True
+        return [flag, self.output]
+
+
+LinReg = MLModel('some_file')
+
+class MLTask:
+    def __init__(self, data):
+        self.data = data
+
+    def validate_data(self, data):
+        """Метод должен проверять входные данные и возвращать True в случае корректности, иначе False"""
+        pass
+
+    def request(self, uploaded_file, user_id):
+        if Balance.get_balance(user_id) >= 100:
+            if self.validate_data(uploaded_file):
+                result = LinReg.predict(uploaded_file)
+                if result[0]:
+                    History.add_transaction(user_id, 'prediction', -100, uploaded_file, result[1])
+                    Balance.withdraw(user_id, 100)
+                    return result[1]
                 else: return 'Не удалось запустить модель.'
             else: return 'Загруженные данные некоректны.'
         else: return 'Не достаточно средств. Пожалуйста, пополните баланс и попытайтесь снова.'
 
-    def get_balance(self):
-        return self.__balance
+class User:
+    def __init__(self, user_id, nickname, name, surname, birth_date, gender):
+        self.user_id = user_id
+        self.nickname = nickname
+        self.__password = None
+        self.name = name
+        self.surname = surname
+        self.birth_date = birth_date
+        self.gender = gender
 
-    def make_deposit(self, amount):
-        self.__balance += amount
+    def set_password(self, password):
+        salt = os.urandom(32)
+        hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
+        self.__password = hashed_password + ';' + salt
 
-    def get_history(self):
-        return self.__history.history
+    def get_data(self):
+        return {'user_id': self.user_id,
+        'nickname': self.nickname,
+        'password': self.__password,
+        'name' : self.name,
+        'surname' : self.surname,
+        'birth date' : self.birth_date,
+        'gender' : self.gender}
+
+class Admin(User):
+    @staticmethod
+    def change_balance(user_id, amount):
+        if amount > 0: Balance.deposit(user_id, amount)
+        else: Balance.withdraw(user_id, amount)
+
+    @staticmethod
+    def see_balance_history():
+        return Balance.get_history()
+
+    @staticmethod
+    def see_transaction_history():
+        return History.get_history()
+
+    @staticmethod
+    def see_user_balance(user_id):
+        return Balance.get_balance(user_id)
+
+
+
+
+
+
+
+
