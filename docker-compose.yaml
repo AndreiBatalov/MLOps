@@ -1,0 +1,28 @@
+version: "3"
+services:
+  app:
+    build: app/.env
+    image: user-new:latest
+    env_file:
+      - app/.env
+    volumes:
+      - ./app:/app
+  web-proxy:
+    build: ./nginx
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - app
+  rabbitmq:
+    image: rabbitmq:4.1-rc-alpine
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+  database:
+    image: postgres:17-alpine
+    volumes:
+      - ./database:/var/lib/postgres

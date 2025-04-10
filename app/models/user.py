@@ -1,7 +1,7 @@
 import hashlib
 import os
-from Lesson2.app.models.balance import Balance
-from Lesson2.app.models.history import History
+from app.models.balance import Balance
+from app.models.history import History
 
 class User:
     def __init__(self, user_id, nickname, name, surname, birth_date, gender):
