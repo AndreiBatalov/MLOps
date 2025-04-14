@@ -1,7 +1,6 @@
-version: "3"
 services:
   app:
-    build: app/.env
+    build: app/
     image: user-new:latest
     env_file:
       - app/.env
@@ -16,13 +15,16 @@ services:
       - app
   rabbitmq:
     image: rabbitmq:4.1-rc-alpine
-    restart: always
+    restart: on-failure
     ports:
       - 15672:15672
       - 5672:5672
     volumes:
-      - ./rabbitmq:/var/lib/rabbitmq
+      - rabbitmg_volume:/var/lib/rabbitmq
   database:
     image: postgres:17-alpine
     volumes:
-      - ./database:/var/lib/postgres
+      - postgres_volume:/var/lib/postgres
+volumes:
+  rabbitmg_volume:
+  postgres_volume:

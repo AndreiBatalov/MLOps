@@ -16,7 +16,7 @@ class User:
     def set_password(self, password):
         salt = os.urandom(32)
         hashed_password = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-        self.__password = hashed_password + ';' + salt
+        self.__password = hashed_password + b';' + salt
 
     def get_data(self):
         return {'user_id': self.user_id,
