@@ -6,6 +6,8 @@ services:
       - app/.env
     volumes:
       - ./app:/app
+    depends_on:
+      - database
   web-proxy:
     build: ./nginx
     ports:
@@ -13,18 +15,25 @@ services:
       - 443:443
     depends_on:
       - app
-  rabbitmq:
-    image: rabbitmq:4.1-rc-alpine
-    restart: on-failure
-    ports:
-      - 15672:15672
-      - 5672:5672
-    volumes:
-      - rabbitmg_volume:/var/lib/rabbitmq
+      - database
+#  rabbitmq:
+#    image: rabbitmq:4.1-rc-alpine
+#    restart: on-failure
+#    ports:
+#      - 15672:15672
+#      - 5672:5672
+#    volumes:
+#      - rabbitmg_volume:/var/lib/rabbitmq
   database:
     image: postgres:17-alpine
     volumes:
       - postgres_volume:/var/lib/postgres
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=sa
 volumes:
-  rabbitmg_volume:
+#  rabbitmq_volume:
   postgres_volume:

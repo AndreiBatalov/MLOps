@@ -1,7 +1,7 @@
 from xmlrpc.client import DateTime
 from sqlmodel import SQLModel, Field
 
-class History(SQLModel, table = True):
+class Event(SQLModel, table = True):
     id: int = Field(default=None, primary_key = True)
     user_id: int
     action: str

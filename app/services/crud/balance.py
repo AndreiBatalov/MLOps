@@ -8,7 +8,7 @@ def get_balance(user_id: int, session) -> int:
     balance = session.exec(statement).first()
     return balance.current_amount()
 
-def deposit(user_id: int, session, amount: int) -> None:
+def deposit(user_id: int, amount: int, session,) -> None:
     new_balance = Balance(user_id = user_id,
                           amount = amount,
                           description = f'deposit +{amount}',
