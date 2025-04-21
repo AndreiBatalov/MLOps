@@ -1,4 +1,4 @@
-from app.models.user import User
+from models.user import User
 from typing import List, Optional
 import os
 import hashlib

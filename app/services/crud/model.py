@@ -1,4 +1,4 @@
-from app.models.model import MLModel
+from models.model import MLModel
 from typing import List
 from balance import get_balance, withdraw
 from event import add_event

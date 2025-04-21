@@ -1,7 +1,7 @@
-from app.models.user import User
-from app.services.crud.user import create_user
-from app.models.balance import Balance
-from app.models.event import History
+from models.user import User
+from services.crud.user import create_user
+from models.balance import Balance
+from models.event import History
 from sqlmodel import SQLModel, Session, create_engine
 from .config import get_settings
 

@@ -1,39 +1,91 @@
-services:
+version: "3"
+services: 
   app:
-    build: app/
-    image: user-new:latest
+    build: ./app/
+    image: event-planner-api:latest 
+    container_name: event-planner-api
+    restart: unless-stopped
     env_file:
-      - app/.env
+    - ./app/.env
     volumes:
       - ./app:/app
     depends_on:
-      - database
-  web-proxy:
-    build: ./nginx
-    ports:
-      - 80:80
-      - 443:443
-    depends_on:
-      - app
-      - database
-#  rabbitmq:
-#    image: rabbitmq:4.1-rc-alpine
-#    restart: on-failure
-#    ports:
-#      - 15672:15672
-#      - 5672:5672
-#    volumes:
-#      - rabbitmg_volume:/var/lib/rabbitmq
-  database:
-    image: postgres:17-alpine
+      - db
+    networks:
+      - event-planner-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+  ml_worker:
+    build: ./ml_worker/
+    image: event-planner-ml-worker:latest
+    container_name: event-planner-ml-worker
+    restart: unless-stopped
+    env_file:
+    - ./ml_worker/.env
     volumes:
-      - postgres_volume:/var/lib/postgres
-    expose:
-      - 5432
+      - ./ml_worker:/app
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - event-planner-network
+  web:
+    image: nginx:latest
+    container_name: event-planner-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      # - ./nginx/ssl:/etc/nginx/ssl
+    networks:
+      - event-planner-network
+  db:
+    image: postgres:16-alpine
+    container_name: event-planner-db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=sa
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - event-planner-network
+  rabbitmq:
+    image: rabbitmq:3.13.1-management-alpine
+    container_name: rabbitmq_for_planner
+    hostname: rabbitmq
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit disk_free_limit 2147483648
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "15672:15672"  # Management UI
+      - "5672:5672"    # AMQP protocol
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - event-planner-network
+
 volumes:
-#  rabbitmq_volume:
-  postgres_volume:
+  postgres_data:
+  rabbitmq_data:
+
+networks:
+  event-planner-network:
+    name: event-planner-network
+    driver: bridge

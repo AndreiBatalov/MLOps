@@ -1,4 +1,4 @@
-from app.models.event import Event
+from models.event import Event
 from sqlmodel import select
 import datetime
 from typing import List
