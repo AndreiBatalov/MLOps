@@ -35,7 +35,7 @@ class MLTask:
             if self.validate_data(uploaded_file):
                 result = LinReg.predict(uploaded_file)
                 if result[0]:
-                    History.add_transaction(user_id, 'prediction', -100, uploaded_file, result[1])
+                    History.add_event(user_id, 'prediction', -100, uploaded_file, result[1])
                     Balance.withdraw(user_id, 100)
                     return result[1]
                 else: return 'Не удалось запустить модель.'
